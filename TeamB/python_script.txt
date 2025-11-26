@@ -1,0 +1,155 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+"""
+cuckoo_recent_check_py27.py
+---------------------------
+Python 2.7 호환 버전
+Cuckoo Sandbox의 analyses 디렉토리에서 최근 N개의 task_id를 찾아 report.json 판정
+"""
+
+import os
+import sys
+import argparse
+import json
+import socket
+
+HOME = os.path.expanduser("~")
+DEFAULT_STORAGE = os.path.join(HOME, ".cuckoo", "storage", "analyses")
+
+SAFE_HOST_HINTS = [
+    "microsoft.com", "windows.com", "msftncsi.com", "edgesuite.net", "akamai.net"
+]
+
+def load_report(task_id, storage=DEFAULT_STORAGE):
+    path = os.path.join(storage, str(task_id), "report.json")
+    if not os.path.exists(path):
+        raise IOError("report.json을 찾을 수 없음: %s" % path)
+    f = open(path, "r")
+    try:
+        return json.load(f)
+    finally:
+        f.close()
+
+def is_public_ip(ip):
+    try:
+        return not ip.startswith("10.") and not ip.startswith("192.168.") and not ip.startswith("172.16.")
+    except:
+        return False
+
+def compute_score(rep):
+    info = rep.get("info", {})
+    try:
+        base = float(info.get("score", 0.0) or 0.0)
+    except:
+        base = 0.0
+    bonus = 0.0
+
+    sigs = rep.get("signatures", [])
+    sig_names = [s.get("name","") for s in sigs]
+
+    # 안티디버깅
+    anti_debug = any(("debug" in n) or ("sandbox" in n) for n in sig_names)
+    if anti_debug: bonus += 1.0
+
+    # 드롭된 PE
+    dropped_pe = False
+    for df in rep.get("dropped", []):
+        if "PE32" in df.get("type",""):
+            dropped_pe = True
+    for pm in rep.get("procmemory", []):
+        for ex in pm.get("extracted", []):
+            if "PE32" in ex.get("type",""):
+                dropped_pe = True
+    if dropped_pe: bonus += 1.0
+
+    # 외부 통신
+    net = rep.get("network", {})
+    ext_http = False
+    for h in net.get("http", []) + net.get("http_ex", []):
+        dst = h.get("dst") or ""
+        host = (h.get("host") or "").lower()
+        if host:
+            skip = False
+            for safe in SAFE_HOST_HINTS:
+                if host.endswith(safe):
+                    skip = True
+            if skip:
+                continue
+        if is_public_ip(dst):
+            ext_http = True
+    if ext_http: bonus += 1.0
+
+    # 인젝션
+    injection = any(("inject" in n) or ("hollow" in n) for n in sig_names)
+    if injection: bonus += 2.0
+
+    # autorun 흔적
+    bhv = rep.get("behavior", {})
+    summary = bhv.get("summary", {})
+    regkeys = [k.lower() for k in summary.get("keys", [])]
+    autorun = any(("run" in k) or ("services" in k) for k in regkeys)
+    if autorun: bonus += 2.0
+
+    final = base + bonus
+    if final > 10.0: final = 10.0
+    if final >= 7.0:
+        verdict = "Malicious"
+    elif final >= 4.0:
+        verdict = "Suspicious"
+    else:
+        verdict = "Benign"
+
+    return {
+        "base_score": base,
+        "bonus": bonus,
+        "final_score": final,
+        "anti_debug": anti_debug,
+        "dropped_pe": dropped_pe,
+        "external_http": ext_http,
+        "injection": injection,
+        "autorun": autorun,
+        "verdict": verdict
+    }
+
+def get_recent_task_ids(storage, n=5):
+    task_ids = []
+    for entry in os.listdir(storage):
+        if entry.isdigit():
+            task_ids.append(int(entry))
+    task_ids.sort(reverse=True)
+    return task_ids[:n]
+
+def main():
+    parser = argparse.ArgumentParser(description="Cuckoo report.json 최근 N개 자동 판별 (Python 2.7)")
+    parser.add_argument("-n", "--number", type=int, default=5, help="최근 N개의 task 분석 (기본=5)")
+    parser.add_argument("--storage", default=DEFAULT_STORAGE, help="Cuckoo storage 경로 (기본: ~/.cuckoo/storage/analyses)")
+    parser.add_argument("--json", action="store_true", help="JSON 형식으로 결과 출력")
+    args = parser.parse_args()
+
+    results = {}
+    task_ids = get_recent_task_ids(args.storage, args.number)
+
+    for tid in task_ids:
+        try:
+            rep = load_report(tid, args.storage)
+            res = compute_score(rep)
+            results[str(tid)] = res
+        except Exception as e:
+            results[str(tid)] = {"error": str(e)}
+
+    if args.json:
+        print(json.dumps(results, indent=2, ensure_ascii=False))
+    else:
+        for tid in results:
+            res = results[tid]
+            print("\n=== Task %s 결과 ===" % tid)
+            if "error" in res:
+                print("[!] 오류: %s" % res["error"])
+                continue
+            print("기본 점수: %.2f  + 보너스 %.2f → 최종 %.2f" % (res["base_score"], res["bonus"], res["final_score"]))
+            print("판정: %s" % res["verdict"])
+            for k in ["anti_debug","dropped_pe","external_http","injection","autorun"]:
+                print("- %s: %s" % (k, "YES" if res[k] else "no"))
+
+if __name__ == "__main__":
+    main()

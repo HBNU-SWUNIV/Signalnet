@@ -1,5 +1,20 @@
 # 점프업 랩스 - SIGNALNET
 
+## 팀구성
+**지도교수**
+
+안은영 교수님 (국립한밭대학교)
+
+**참가인원(팀원)**
+
+지능미디어공학과 이용재 30242855  
+지능미디어공학과 하승철 30242856  
+지능미디어공학과 Emmanuel Kwakye Kwaning 30242849  
+지능미디어공학과 유은수 20241103  
+지능미디어공학과 육소연 20241104  
+지능미디어공학과 이찬희 20241112  
+
+
 ## 1. 연구 개요
 본 연구는 차세대 5G·6G, Wi-Fi, IoT 환경 등 고도화된 무선 네트워크에서 인공지능(AI) 기술을 적용하여 무선통신 시스템의 지능화 및 성능 향상을 목표로 한다.  
 무선 채널의 변동성과 복잡성이 증가함에 따라 기존 규칙 기반 시스템 설계만으로는 한계가 존재하며, 이를 극복하기 위해 딥러닝·머신러닝 기반 신호 분석 및 보안 분석 기술을 도입하였다.
@@ -36,6 +51,9 @@ Wi-Fi AP와 SDR 장비 간 채널상태정보(CSI)를 수집하여 정자세(Sup
 - CSI 데이터 전처리 및 학습·검증·테스트 파이프라인 구성  
 - 실험 환경: USRP B210, Wi-Fi AP(5GHz, CH128), 아기 인형 배치
 
+[<img width="300" height="200" alt="image" src="https://github.com/user-attachments/assets/87e72a23-7d2b-49c4-857f-6506a6c0f343" />
+](https://i.ifh.cc/BLB591.png)
+
 ---
 
 ### (2) Cuckoo Sandbox 기반 악성코드 분석
@@ -43,6 +61,7 @@ Malware Bazaar 악성코드 샘플을 이용해 Cuckoo Sandbox 환경에서 동�
 - 파일/프로세스/네트워크 행위 자동 수집  
 - report.json 자동화 파이썬 스크립트 구현  
 - 정상/악성 행위 기반 특징 비교 및 통계 분석 수행
+<img width="300" height="150" alt="image" src="https://github.com/user-attachments/assets/08c0b959-1b79-4f4c-9054-6a7db08ba5ea" />
 
 ---
 

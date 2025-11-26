@@ -1,127 +1,75 @@
-# Wi-Fi CSI 기반 자세 분류 실험 (Supine / Lateral)
+# 점프업 랩스 - SIGNALNET
 
-본 프로젝트는 USRP B210 SDR 장비를 활용하여 Wi-Fi CSI(Channel State Information) 데이터를 수집하고,  
-수집된 데이터를 이용해 CNN 모델을 학습하여 누운 자세(정자세, Supine)와 옆으로 누운 자세(Lateral)를 분류하는 실험입니다.
+## 1. 연구 개요
+본 연구는 차세대 5G·6G, Wi-Fi, IoT 환경 등 고도화된 무선 네트워크에서 인공지능(AI) 기술을 적용하여 무선통신 시스템의 지능화 및 성능 향상을 목표로 한다.  
+무선 채널의 변동성과 복잡성이 증가함에 따라 기존 규칙 기반 시스템 설계만으로는 한계가 존재하며, 이를 극복하기 위해 딥러닝·머신러닝 기반 신호 분석 및 보안 분석 기술을 도입하였다.
 
----
+본 프로젝트는 다음 두 가지 연구로 구성된다:
 
-## 전체 파이프라인 개요
-
-| 단계 | 내용 |
-|-----|-----|
-| 1. SDR 설정 | USRP B210 장비 초기화 및 채널/주파수/GAIN 설정 |
-| 2. 데이터 수집 | Supine / Lateral 각각 지정된 수량 만큼 CSI 캡처 및 저장 |
-| 3. 데이터 로드 & 전처리 | 저장된 CSI 데이터 불러오기 및 정규화 |
-| 4. Train / Validation / Test 분할 | 훈련용 / 검증용 / 테스트용 데이터 생성 |
-| 5. CNN 모델 구성 및 학습 | 2D CNN 기반 분류 모델 학습 |
-| 6. 실시간 자세 감지 | 학습된 모델로 실시간 자세 분류 수행 |
+1. Wi-Fi CSI 기반 영유아 자세 탐지 및 모니터링  
+2. Cuckoo Sandbox 기반 악성코드 행위 분석
 
 ---
 
-## 1. SDR 기본 설정
+## 2. 논문 정보
 
-```matlab
-useSDR = true; % true: 실시간 SDR 캡처, false: 저장된 데이터 사용
-rxsim.DeviceName           = "B210";
-rxsim.RadioGain            = 15;
-rxsim.ChannelNumber        = 124;
-rxsim.FrequencyBand        = 5;
-```
-
-- 기존 SDR 객체가 남아 있는 경우 충돌 방지를 위해 `release()` 후 재생성합니다.
-- 데이터 저장 파일은 다음과 같습니다.
-
-```
-dataset-Supine.mat
-dataset-Lateral.mat
-```
+### (1) Wi-Fi CSI 기반 영유아 자세 탐지 및 모니터링 시스템  
+**논문 제목:** Wi-Fi CSI 기반 영유아 자세 탐지 및 모니터링 시스템  
+**논문 저자:** 이찬희, 육소연, 이용재, 안은영, 김태훈, 방인규  
+**발표:** 2025 한국통신학회 추계종합학술발표회  
+**수상:** 학부논문 장려상
 
 ---
 
-## 2. 데이터 수집
-
-### Supine / Lateral 모두 동일한 방식
-
-- 1 Batch = 10개의 캡처
-- 총 50 batch → 500개의 샘플 수집
-- 캡처 실패 시 최대 5회 재시도
-
-```matlab
-capturePerBatch = 10;
-numBatches = 50;
-maxRetries = 5;
-```
-
-수집 중 실패한 샘플은 자동으로 건너뜁니다.  
-수집된 데이터는 추가 저장 방식(append)으로 파일 끝에 계속 이어 붙여집니다.
+### (2) Cuckoo Sandbox 기반 악성코드 행위 분석 및 판별 연구  
+**논문 제목:** Cuckoo Sandbox 기반 악성코드 행위 분석 및 판별 연구  
+**논문 저자:** 유은수, 하승철, 안은영, 김태훈, 방인규  
+**발표:** 2025 한국통신학회 추계종합학술발표회
 
 ---
 
-## 3. 데이터 정규화 및 분할
+## 3. 연구 내용
 
-```matlab
-normalizeCSI = @(x) (abs(x) - mean(abs(x),'all')) / std(abs(x),0,'all');
-```
-
-- CSI 진폭값을 평균 0, 표준편차 1로 변환 (학습 안정화 효과)
-
-학습/검증/테스트 분할:
-```matlab
-trainingRatio = 0.8;
-```
+### (1) Wi-Fi CSI 기반 영유아 자세 탐지
+Wi-Fi AP와 SDR 장비 간 채널상태정보(CSI)를 수집하여 정자세(Supine)와 측면 자세(Lateral)를 분류하는 비접촉식 모니터링 시스템을 구현하였다.  
+- MATLAB 기반 딥러닝 모델 사용  
+- CSI 데이터 전처리 및 학습·검증·테스트 파이프라인 구성  
+- 실험 환경: USRP B210, Wi-Fi AP(5GHz, CH128), 아기 인형 배치
 
 ---
 
-## 4. CNN 구조
-
-```matlab
-imageInputLayer(imgInputSize,'Normalization','none')
-convolution2dLayer(3,16,'Padding','same')
-...
-fullyConnectedLayer(numClasses)
-softmaxLayer
-classificationLayer
-```
-
-- 3-Block Conv 구조
-- Dropout 적용 (0.2)
-- Adam optimizer 사용 (`MaxEpochs = 20`)
+### (2) Cuckoo Sandbox 기반 악성코드 분석
+Malware Bazaar 악성코드 샘플을 이용해 Cuckoo Sandbox 환경에서 동적 분석을 수행하였다.  
+- 파일/프로세스/네트워크 행위 자동 수집  
+- report.json 자동화 파이썬 스크립트 구현  
+- 정상/악성 행위 기반 특징 비교 및 통계 분석 수행
 
 ---
 
-## 5. 학습 및 실시간 예측
+## 4. 연구 결과
 
-```matlab
-trainedCNN = trainNetwork(trainingData, cnnLayers, options);
-```
-
-### 실시간 모드 (`useSDR = true`)
-```matlab
-sensingResults = livePresenceDetection(rxsim, trainedCNN, uniqueClassLabels, 20);
-```
-
-### 테스트 데이터 평가 (`useSDR = false`)
-```matlab
-sensingResults = testPresenceDetection(testData, trainedCNN);
-```
+### (1) Wi-Fi CSI 기반 자세 탐지
+- 데이터 500장 학습 시 정확도: **57.85%**
+- 데이터 확장 후 정확도: **68.86%**
+  - 정자세: 71.1%  
+  - 측면자세: 66.7%  
+데이터 수 증가와 모델 개선이 성능 향상에 기여함을 확인하였다.
 
 ---
 
-## 주의 사항
-
-| 항목 | 내용 |
-|-----|-----|
-| 실험 환경 유지 | 침대 위치 / 실험자 위치 변화 금지 |
-| 라우터-수신기 사이 가림 주의 | 사람/가구 이동 시 CSI 변화 발생 |
-| 데이터 수집 시간 일정하게 | 배치 간 시간차 줄일수록 학습 성능 ↑ |
-| Supine ↔ Lateral 수집 균형 | 클래스 불균형 시 학습 성능 ↓ |
+### (2) 악성코드 행위 분석
+- 파일 생성·삭제, 프로세스 인젝션, 네트워크 통신, 레지스트리 등록 등 핵심 행위를 자동 수집  
+- Python 스크립트 기반 분석 자동화 구현  
+- 추출된 행위 데이터를 기반으로 향후 자동 분류 시스템 개발 가능성을 확인
 
 ---
 
-## 결론
+## 5. 결론
 
-이 코드는  
-**CSI 기반 자세 인식 실험 → 데이터 수집 → CNN 학습 → 실시간 감지** 까지  
-전체 파이프라인을 자동으로 수행할 수 있도록 구성되어 있습니다.
+### Wi-Fi CSI 기반 자세 탐지 시스템
+무선 신호 기반 비접촉식 자세 분류 기술이 영유아 모니터링 분야에 실질적으로 활용될 수 있음을 확인하였다.  
+데이터 확장 및 다양한 환경에서의 추가 실험을 통해 정확도 개선이 가능하다.
 
-실험을 반복하면서 환경 변화 최소화, 데이터 수집 균형 유지, 정규화/전처리 유지가 핵심입니다.
+### Cuckoo Sandbox 기반 악성코드 분석
+동적 분석 기반 행위 수집은 악성코드 특성 파악에 매우 효과적이며,  
+추출된 특징은 자동 판별 모델 및 보안 정책 개선에 활용할 수 있다.
